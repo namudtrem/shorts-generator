@@ -41,8 +41,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error?.message || "insert failed" }, { status: 500 });
 
   // Trigger the pipeline.
-  if (process.env.NETLIFY) {
-    // Production: invoke the long-running background function (up to 15 min).
+  if (process.env.NODE_ENV === "production") {
+    // Production (Netlify): invoke the long-running background function (15 min).
+    // A normal serverless function would be killed ~10s after the response,
+    // so the heavy pipeline must run in a *background* function instead.
     const base = process.env.NEXT_PUBLIC_SITE_URL || "";
     fetch(`${base}/.netlify/functions/generate-background`, {
       method: "POST",
