@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# The pipeline orchestrator runs as a background function (up to 15 min).
+# Next.js route handlers are deployed as Netlify Functions automatically by
+# the Next.js plugin. We mark the generate route as a background function so
+# it can run the long Claude -> ElevenLabs -> images -> render pipeline.
+[functions]
+  node_bundler = "esbuild"
