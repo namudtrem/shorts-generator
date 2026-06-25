@@ -45,12 +45,20 @@ export async function POST(req: Request) {
     // Production (Netlify): invoke the long-running background function (15 min).
     // A normal serverless function would be killed ~10s after the response,
     // so the heavy pipeline must run in a *background* function instead.
-    const base = process.env.NEXT_PUBLIC_SITE_URL || "";
-    fetch(`${base}/.netlify/functions/generate-background`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId: job.id }),
-    }).catch(() => {});
+    // Build an absolute URL from the incoming request host (no config needed).
+    const host = req.headers.get("host");
+    const base = process.env.NEXT_PUBLIC_SITE_URL || (host ? `https://${host}` : "");
+    // Background functions answer 202 instantly, so awaiting only guarantees
+    // the invocation fires before this handler is frozen.
+    try {
+      await fetch(`${base}/.netlify/functions/generate-background`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: job.id }),
+      });
+    } catch (e) {
+      console.error("background trigger failed", e);
+    }
   } else {
     // Local dev: run inline (fire-and-forget). `next dev` keeps the process alive.
     const { runPipeline } = await import("@/lib/pipeline/run");
